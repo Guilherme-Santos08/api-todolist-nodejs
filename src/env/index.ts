@@ -7,6 +7,8 @@ const envSchema = z.object({
   PORT: z.number().default(3333),
 })
 
+// parse vai pegar o process.env e verificar se os tipos das variaveis batem com o envSchema. (process.env === envSchema)
+// Com safeParse ele permite eu criar meu proprio erro. Me retornando true ou false
 const _env = envSchema.safeParse(process.env)
 
 if (_env.success === false) {
