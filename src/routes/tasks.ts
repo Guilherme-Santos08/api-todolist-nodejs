@@ -6,6 +6,24 @@ import { z } from 'zod'
 import { knex } from '../database'
 
 export async function tasksRoutes(app: FastifyInstance) {
+  app.get('/', async () => {
+    const tasks = await knex('tasks').select()
+
+    return { tasks }
+  })
+
+  app.get('/:id', async (request) => {
+    const getTasksParamsSchema = z.object({
+      id: z.string().uuid(),
+    })
+
+    const { id } = getTasksParamsSchema.parse(request.params)
+
+    const task = await knex('tasks').where('id', id).first()
+
+    return { task }
+  })
+
   app.post('/', async (request, reply) => {
     const createTasksBodySchema = z.object({
       title: z.string(),
@@ -19,12 +37,6 @@ export async function tasksRoutes(app: FastifyInstance) {
       title,
       description,
     })
-
-    // const taskUnique = await knex('tasks')
-    //   .where('id', '2c330bd5-4263-463a-a8a0-578f16cbaf58')
-    //   .select('*')
-
-    // const tasks = await knex('tasks').select('*')
 
     return reply.status(201).send()
   })
