@@ -9,6 +9,7 @@ export const config: Knex.Config = {
   client: 'sqlite',
   connection: {
     filename: env.DATABASE_URL,
+    timezone: 'America/Sao_Paulo', // Definindo o fuso horário para Brasília
   },
   useNullAsDefault: true,
   migrations: {

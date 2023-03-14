@@ -15,39 +15,31 @@ export async function tasksRoutes(app: FastifyInstance) {
     '/',
     { preHandler: [checkSessionIdexists] },
     async (request, reply) => {
-      const { sessionId } = request.cookies
-
-      try {
-        const tasks = await knex('tasks')
-          .where('session_id', sessionId)
-          .select()
-
-        return reply.status(200).send({ tasks })
-      } catch {
-        throw new Error('Failed to get task list')
-      }
-    },
-  )
-
-  app.get(
-    '/:id',
-    { preHandler: [checkSessionIdexists] },
-    async (request, reply) => {
-      const getTasksParamsSchema = z.object({
-        id: z.string().uuid(),
+      const getTasksQuerySchema = z.object({
+        search: z.string().optional(),
       })
 
       try {
-        const { id } = getTasksParamsSchema.parse(request.params)
         const { sessionId } = request.cookies
+        const { search } = getTasksQuerySchema.parse(request.query)
 
-        const task = await knex('tasks')
-          .where({ session_id: sessionId, id })
-          .first()
+        const tasks = await knex('tasks')
+          .where('session_id', sessionId)
+          .modify((queryBuilder) => {
+            if (search) {
+              queryBuilder.where(function () {
+                this.where('title', 'like', `%${search}%`)
+              })
+            } else {
+              queryBuilder.select()
+            }
+          })
+          .select()
 
-        return reply.status(200).send({ task })
-      } catch {
-        throw new Error('Failed to get task')
+        return reply.send({ tasks })
+      } catch (error) {
+        console.error(error)
+        throw new Error('Failed to get task list')
       }
     },
   )
@@ -106,46 +98,62 @@ export async function tasksRoutes(app: FastifyInstance) {
     },
   )
 
-  app.put('/:id', async (request, reply) => {
-    const getTasksParamsSchema = z.object({
-      id: z.string().uuid(),
-    })
+  app.put(
+    '/:id',
+    { preHandler: [checkSessionIdexists] },
+    async (request, reply) => {
+      const getTasksParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
 
-    const getTasksBodySchema = z.object({
-      title: z.string(),
-      description: z.string(),
-    })
+      const getTasksBodySchema = z.object({
+        title: z.string(),
+        description: z.string(),
+      })
 
-    try {
-      const { id } = getTasksParamsSchema.parse(request.params)
-      const { title, description } = getTasksBodySchema.parse(request.body)
+      try {
+        const { id } = getTasksParamsSchema.parse(request.params)
+        const { sessionId } = request.cookies
 
-      await knex('tasks').where('id', id).update({ title, description })
+        const { title, description } = getTasksBodySchema.parse(request.body)
 
-      return reply.status(204).send()
-    } catch {
-      throw new Error('Failed to edit task')
-    }
-  })
+        await knex('tasks')
+          .where({ session_id: sessionId, id })
+          .update({ title, description })
 
-  app.patch('/:id/complete', async (request, reply) => {
-    const getTasksParamsSchema = z.object({
-      id: z.string().uuid(),
-    })
+        return reply.status(204).send()
+      } catch {
+        throw new Error('Failed to edit task')
+      }
+    },
+  )
 
-    const getTasksBodySchema = z.object({
-      completedAt: z.boolean(),
-    })
+  app.patch(
+    '/:id/complete',
+    { preHandler: [checkSessionIdexists] },
+    async (request, reply) => {
+      const getTasksParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
 
-    try {
-      const { id } = getTasksParamsSchema.parse(request.params)
-      const { completedAt } = getTasksBodySchema.parse(request.body)
+      const getTasksBodySchema = z.object({
+        completedAt: z.boolean(),
+      })
 
-      await knex('tasks').where({ id }).update('completed_at', completedAt)
+      try {
+        const { id } = getTasksParamsSchema.parse(request.params)
+        const { sessionId } = request.cookies
 
-      return reply.status(200).send()
-    } catch {
-      throw new Error('Failed to complete task')
-    }
-  })
+        const { completedAt } = getTasksBodySchema.parse(request.body)
+
+        await knex('tasks')
+          .where({ session_id: sessionId, id })
+          .update({ completed_at: completedAt, updated_at: knex.fn.now() })
+
+        return reply.status(200).send()
+      } catch {
+        throw new Error('Failed to complete task')
+      }
+    },
+  )
 }
