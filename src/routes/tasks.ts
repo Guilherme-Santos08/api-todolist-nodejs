@@ -17,9 +17,15 @@ export async function tasksRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { sessionId } = request.cookies
 
-      const tasks = await knex('tasks').where('session_id', sessionId).select()
+      try {
+        const tasks = await knex('tasks')
+          .where('session_id', sessionId)
+          .select()
 
-      return reply.status(200).send({ tasks })
+        return reply.status(200).send({ tasks })
+      } catch {
+        throw new Error('Failed to get task list')
+      }
     },
   )
 
@@ -40,9 +46,8 @@ export async function tasksRoutes(app: FastifyInstance) {
           .first()
 
         return reply.status(200).send({ task })
-      } catch (err) {
-        console.error(err)
-        return reply.code(500).send({ error: 'Internal server error' })
+      } catch {
+        throw new Error('Failed to get task')
       }
     },
   )
@@ -75,9 +80,8 @@ export async function tasksRoutes(app: FastifyInstance) {
       })
 
       return reply.status(201).send()
-    } catch (err) {
-      console.error(err)
-      return reply.code(500).send({ error: 'Internal server error' })
+    } catch {
+      throw new Error('Failed to create task')
     }
   })
 
@@ -96,9 +100,8 @@ export async function tasksRoutes(app: FastifyInstance) {
         await knex('tasks').where({ session_id: sessionId, id }).del()
 
         return reply.status(204).send()
-      } catch (err) {
-        console.error(err)
-        return reply.code(500).send({ error: 'Internal server error' })
+      } catch {
+        throw new Error('Failed to delete task')
       }
     },
   )
@@ -120,9 +123,8 @@ export async function tasksRoutes(app: FastifyInstance) {
       await knex('tasks').where('id', id).update({ title, description })
 
       return reply.status(204).send()
-    } catch (err) {
-      console.error(err)
-      return reply.code(500).send({ error: 'Internal server error' })
+    } catch {
+      throw new Error('Failed to edit task')
     }
   })
 
@@ -142,9 +144,8 @@ export async function tasksRoutes(app: FastifyInstance) {
       await knex('tasks').where({ id }).update('completed_at', completedAt)
 
       return reply.status(200).send()
-    } catch (err) {
-      console.error(err)
-      return reply.code(500).send({ error: 'Internal server error' })
+    } catch {
+      throw new Error('Failed to complete task')
     }
   })
 }
