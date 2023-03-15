@@ -44,6 +44,29 @@ export async function tasksRoutes(app: FastifyInstance) {
     },
   )
 
+  app.get(
+    '/:id',
+    { preHandler: [checkSessionIdexists] },
+    async (request, reply) => {
+      const getTasksParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
+
+      try {
+        const { id } = getTasksParamsSchema.parse(request.params)
+        const { sessionId } = request.cookies
+
+        const task = await knex('tasks')
+          .where({ session_id: sessionId, id })
+          .first()
+
+        return reply.status(200).send({ task })
+      } catch {
+        throw new Error('Failed to get task')
+      }
+    },
+  )
+
   app.post('/', async (request, reply) => {
     const createTasksBodySchema = z.object({
       title: z.string(),
@@ -150,7 +173,7 @@ export async function tasksRoutes(app: FastifyInstance) {
           .where({ session_id: sessionId, id })
           .update({ completed_at: completedAt, updated_at: knex.fn.now() })
 
-        return reply.status(200).send()
+        return reply.status(204).send()
       } catch {
         throw new Error('Failed to complete task')
       }
