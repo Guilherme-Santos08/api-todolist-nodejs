@@ -21,8 +21,9 @@
     "dotenv": "^16.0.3",
     "fastify": "^4.14.1",
     "knex": "^2.4.2",
+    "pg": "^8.10.0",
     "zod": "^3.21.4"
-  }, 
+  },
   "devDependencies": {
     "@rocketseat/eslint-config": "^1.2.0",
     "@types/node": "^18.15.2",
